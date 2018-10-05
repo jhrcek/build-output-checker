@@ -1,0 +1,44 @@
+name:                build-output-checker
+version:             0.1.0
+github:              "jhrcek/build-output-checker"
+license:             BSD3
+author:              "Jan Hrček"
+maintainer:          "jhrcek@redhat.com"
+copyright:           "2018 Jan Hrček"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+synopsis:            Find issues in the build output of Jenkins builds
+category:            Web
+
+description:         Please see the README on GitHub at <https://github.com/jhrcek/build-output-checker#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+
+library:
+  source-dirs: src
+
+executables:
+  build-output-checker-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - build-output-checker
+
+tests:
+  build-output-checker-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - build-output-checker
