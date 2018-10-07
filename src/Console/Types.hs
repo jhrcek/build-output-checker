@@ -1,17 +1,42 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Console.Types
-  ( LogLine(..)
+  ( RawLine(..)
   , TimedLogLine(..)
   , ElapsedTime(..)
   , Duration(..)
+  , LogLine(..)
+  , TransferType(..)
+  , TransferSpeed(..)
+  , FileSize(..)
+  , SizeUnit(..)
   , diffElapsed
   , getElapsedTime
   , mkElapsedTime
   , getInterval
+  , getLogLine
   ) where
+
 import Data.Text (Text)
 import Data.Time.Clock (DiffTime, picosecondsToDiffTime)
 
-newtype LogLine = LogLine Text deriving (Show)
+newtype RawLine = RawLine Text deriving (Show)
+
+data LogLine
+    = MavenTransferStart TransferType RepoName RepoUrl
+    | MavenTransferEnd TransferType RepoName RepoUrl FileSize (Maybe TransferSpeed)
+    | MavenPluginStart Text -- TODO refine
+    | Maven LogLevel Text
+    | Unknown
+    deriving (Show, Eq)
+
+data LogLevel = INFO | WARNING | ERROR deriving (Show, Eq)
+
+type RepoName = Text
+type RepoUrl = Text
+data FileSize = FileSize Double SizeUnit deriving (Show, Eq)
+data TransferType = Upload | Download deriving (Show, Eq)
+data TransferSpeed = TransferSpeed Double SizeUnit deriving (Show, Eq)
+data SizeUnit = B | KB | MB deriving (Show, Eq)
 
 data TimedLogLine = TimedLogLine ElapsedTime LogLine deriving (Show)
 
@@ -25,6 +50,9 @@ instance Semigroup Duration where
     Duration a <> Duration b = Duration (a + b)
 instance Monoid Duration where
     mempty = Duration 0
+
+getLogLine :: TimedLogLine -> LogLine
+getLogLine (TimedLogLine _ ll) = ll
 
 getElapsedTime :: TimedLogLine -> ElapsedTime
 getElapsedTime (TimedLogLine et _) = et

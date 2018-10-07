@@ -21,6 +21,8 @@ dependencies:
 - conduit
 - split
 - time
+- parsec
+- containers
 ghc-options:
     - -Wall
 
@@ -48,3 +50,5 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - build-output-checker
+    - hspec
+    - QuickCheck
