@@ -12,7 +12,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Read (double)
 import Text.Parsec (parse, string, try, (<|>))
-import Text.Parsec.Char (anyChar, char, digit)
+import Text.Parsec.Char (anyChar, char, digit, satisfy)
 import Text.Parsec.Combinator (eof, many1, manyTill, option, optionMaybe)
 import Text.Parsec.Text (Parser)
 import Util (warn)
@@ -46,28 +46,49 @@ parseLine txt = case parse logLineP "" txt of
 logLineP :: Parser LogLine
 logLineP =
       mavenDownloadOrUploadP
+  <|> pluginStartP
   <|> pure Unknown
   where
     mavenDownloadOrUploadP =
-        (do _ <- try (string "[INFO] Downloading from ")
-            (MavenTransferStart Download <$> repoP
-                <*> (T.pack <$> anyChar `manyTill` eof))) <|>
-        (do _ <- try (string "[INFO] Downloaded from ")
-            (MavenTransferEnd Download <$> repoP
-                <*> (T.pack <$> anyChar `manyTill` char ' ')
-                <*> (char '(' *> fileSizeP)
+        (try (string "[INFO] Downloading from ") *>
+             (MavenTransferStart Download <$> repoNameP
+                <*> (repoUrlP eof))) <|>
+        (try (string "[INFO] Downloaded from ") *>
+             (MavenTransferEnd Download <$> repoNameP
+                <*> (repoUrlP (string " ("))
+                <*> fileSizeP
                 <*> (Just <$> (string " at " *> transferSpeedP))))  <|>
-        (do _ <- try (string "[INFO] Uploading to ")
-            (MavenTransferStart Upload <$> repoP
-                <*> (T.pack <$> anyChar `manyTill` eof))) <|>
-        (do _ <- try (string "[INFO] Uploaded to ")
-            (MavenTransferEnd Upload <$> repoP
-                <*> (T.pack <$> anyChar `manyTill` char ' ')
-                <*> (char '(' *> fileSizeP)
+        (try (string "[INFO] Uploading to ") *>
+             (MavenTransferStart Upload <$> repoNameP
+                <*> (repoUrlP eof))) <|>
+        (try (string "[INFO] Uploaded to ") *>
+             (MavenTransferEnd Upload <$> repoNameP
+                <*> (repoUrlP (string " ("))
+                <*> fileSizeP
                 <*> (optionMaybe $  -- local uploads only have file size, e.g. "[INFO] Uploaded to local: file://... (1.3 kB)"
                         string " at " *> transferSpeedP)))
-        where
-          repoP = T.pack <$> anyChar `manyTill` string ": "
+            where
+              repoNameP = RepoName . T.pack <$> anyChar `manyTill` string ": "
+              repoUrlP :: Parser a -> Parser RepoUrl
+              repoUrlP endP = RepoUrl . T.pack <$> anyChar `manyTill` endP
+
+    pluginStartP =
+        (try (string "[INFO] --- ") *> (MavenPluginExecution <$>pluginExecutionP))
+
+    -- Parse stuff like "maven-clean-plugin:3.0.0:clean (default-clean) @ uberfire-widgets-properties-editor-backend ---"
+
+
+pluginExecutionP :: Parser PluginExecution
+pluginExecutionP = PluginExecution
+    <$> (T.pack <$> many1 nonColon <* char ':')
+    <*> (T.pack <$> many1 nonColon <* char ':')
+    <*> (T.pack <$> many1 nonSpace <* string " (")
+    <*> (T.pack <$> many1 nonRpar <* string ") @ ")
+    <*> (T.pack <$> many1 nonSpace <* string " ---")
+  where
+    nonColon = satisfy (/= ':')
+    nonRpar  = satisfy (/= ')')
+    nonSpace = satisfy (/= ' ')
 
 fileSizeP :: Parser FileSize
 fileSizeP = do

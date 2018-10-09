@@ -6,13 +6,12 @@ module Console.Checks.MavenDownload
   , getDistinctDownloadUrls
   ) where
 
-import Console.Types (Duration (..), LogLine (..), TimedLogLine (..),
+import Console.Types (Duration (..), LogLine (..), RepoUrl, TimedLogLine (..),
                       TransferType (Download), diffElapsed, getInterval,
                       getLogLine)
 import Data.List.Split (wordsBy)
 import Data.Set as Set
 import Data.Set (Set)
-import Data.Text (Text)
 
 getMavenDownloadDurations :: [TimedLogLine] -> [Duration]
 getMavenDownloadDurations =
@@ -24,7 +23,7 @@ getMavenDownloadDurations =
           MavenTransferEnd Download _ _ _ _ -> True
           _                                 -> False
 
-getDistinctDownloadUrls :: [LogLine] -> Set Text
+getDistinctDownloadUrls :: [LogLine] -> Set RepoUrl
 getDistinctDownloadUrls = foldMap toUrlSet
   where
     toUrlSet = \case
