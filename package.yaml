@@ -16,13 +16,17 @@ category:                    Web
 description:                 Please see the README on GitHub at <https://github.com/jhrcek/build-output-checker#readme>
 
 dependencies:
+- aeson
 - base >= 4.7 && < 5
-- text
-- conduit
-- split
-- time
-- parsec
+- bytestring
 - containers
+- conduit
+- lens
+- lens-aeson
+- parsec
+- split
+- text
+- time
 ghc-options:
     - -Wall
 
