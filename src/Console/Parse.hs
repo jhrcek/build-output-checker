@@ -47,6 +47,7 @@ logLineP :: Parser LogLine
 logLineP =
       mavenDownloadOrUploadP
   <|> pluginStartP
+  <|> junitTestClassSummayP
   <|> pure Unknown
   where
     mavenDownloadOrUploadP =
@@ -73,11 +74,23 @@ logLineP =
               repoUrlP endP = RepoUrl . T.pack <$> anyChar `manyTill` endP
 
     pluginStartP =
-        (try (string "[INFO] --- ") *> (MavenPluginExecution <$>pluginExecutionP))
+        (try (string "[INFO] --- ") *> (MavenPluginExecution <$> pluginExecutionP))
 
-    -- Parse stuff like "maven-clean-plugin:3.0.0:clean (default-clean) @ uberfire-widgets-properties-editor-backend ---"
+    junitTestClassSummayP =
+      try (string "Tests run: " *> (JunitTestClassSummay <$> testClassInfoP))
 
 
+-- "Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.694 sec - in org.jbpm.process.workitem.camel.CamelSqlTest"
+testClassInfoP :: Parser TestClassInfo
+testClassInfoP = TestClassInfo
+    <$> (intP <* string ", Failures: ")
+    <*> (intP <* string ", Errors: ")
+    <*> (intP <* string ", Skipped: ")
+    <*> (intP <* string ", Time elapsed: ")
+    <*> (doubleP <* string " sec - in ")
+    <*> (T.pack <$> (anyChar `manyTill` eof))
+
+-- Parse "maven-clean-plugin:3.0.0:clean (default-clean) @ uberfire-widgets-properties-editor-backend ---"
 pluginExecutionP :: Parser PluginExecution
 pluginExecutionP = PluginExecution
     <$> (T.pack <$> many1 nonColon <* char ':')
@@ -116,3 +129,6 @@ doubleP = read <$> ((<>) <$> number <*> decimal)
   where
     number = many1 digit
     decimal = option "" $ (:) <$> char '.' <*> number
+
+intP :: Parser Int
+intP = read <$> many1 digit

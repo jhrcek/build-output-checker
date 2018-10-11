@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeApplications  #-}
 module Main where
 
-import Console.Checks.JunitReport (TestInfo (..))
+import Console.Checks.TestDuration (MethodDuration (..))
 import Console.Parse (parseLine)
 import Console.Types
 import qualified Data.Aeson as Aeson
@@ -30,8 +30,11 @@ main = hspec $ do
       it "should parse lines where maven plugin execution starts" $ do
         parseLine "[INFO] --- buildnumber-maven-plugin:1.4:create (get-scm-revision) @ uberfire-project-client ---"
           `shouldBe` MavenPluginExecution (PluginExecution "buildnumber-maven-plugin" "1.4" "create" "get-scm-revision" "uberfire-project-client")
+      it "should parse lines with test class info" $ do
+        parseLine "Tests run: 1, Failures: 2, Errors: 3, Skipped: 4, Time elapsed: 5.694 sec - in org.jbpm.process.workitem.camel.CamelSqlTest"
+          `shouldBe` JunitTestClassSummay (TestClassInfo 1 2 3 4 5.694 "org.jbpm.process.workitem.camel.CamelSqlTest")
   describe "Console.Checks.JunitReport" $ do
-      describe "TestInfo" $ do
-        it "should parse single TestInfo JSON object" $
-          Aeson.decode @TestInfo "{\"className\":\"org.dashbuilder.navigation.service.LayoutTemplateAnalyzerTest\",\"duration\":0.002,\"name\":\"testPerspectiveReuseNoRecursiveIssue\"}"
-            `shouldBe` (Just $ TestInfo "org.dashbuilder.navigation.service.LayoutTemplateAnalyzerTest" "testPerspectiveReuseNoRecursiveIssue" 0.002)
+      describe "MethodDuration" $ do
+        it "should parse single MethodDuration JSON object" $
+          Aeson.decode @MethodDuration "{\"className\":\"org.dashbuilder.navigation.service.LayoutTemplateAnalyzerTest\",\"duration\":0.002,\"name\":\"testPerspectiveReuseNoRecursiveIssue\"}"
+            `shouldBe` (Just $ MethodDuration "org.dashbuilder.navigation.service.LayoutTemplateAnalyzerTest" "testPerspectiveReuseNoRecursiveIssue" 0.002)

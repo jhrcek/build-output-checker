@@ -10,11 +10,13 @@ pluginDurations linez =
   where
     pluginStarts = mapMaybe getPluginExecution linez
 
-calcDuration :: (ElapsedTime, PluginExecution) -> (ElapsedTime, PluginExecution) -> (PluginExecution, Duration)
-calcDuration (start1, pl1) (start2, _)
+calcDuration :: (PluginExecution, ElapsedTime)
+             -> (PluginExecution, ElapsedTime)
+             -> (PluginExecution, Duration)
+calcDuration (pl1, start1) (_, start2)
     = (pl1, diffElapsed start1 start2)
 
-getPluginExecution :: TimedLogLine -> Maybe (ElapsedTime, PluginExecution)
+getPluginExecution :: TimedLogLine -> Maybe (PluginExecution, ElapsedTime)
 getPluginExecution = \case
-    (TimedLogLine et (MavenPluginExecution ple)) -> Just (et, ple)
+    (TimedLogLine et (MavenPluginExecution ple)) -> Just (ple, et)
     _                                            -> Nothing

@@ -10,6 +10,7 @@ module Console.Types
   , RepoUrl(..)
   , SizeUnit(..)
   , TimedLogLine(..)
+  , TestClassInfo(..)
   , TransferSpeed(..)
   , TransferType(..)
   , diffElapsed
@@ -29,6 +30,7 @@ data LogLine
     = MavenTransferStart !TransferType !RepoName !RepoUrl
     | MavenTransferEnd !TransferType !RepoName !RepoUrl !FileSize !(Maybe TransferSpeed)
     | MavenPluginExecution !PluginExecution
+    | JunitTestClassSummay !TestClassInfo
     | Maven !LogLevel !Text
     | Unknown
     deriving (Show, Eq)
@@ -41,6 +43,15 @@ data PluginExecution = PluginExecution
     , pluginExecutionId :: !Text
     , pluginMavenModue  :: !Text
     } deriving Eq
+
+data TestClassInfo = TestClassInfo
+  { tciRun         :: !Int
+  , tciFailures    :: !Int
+  , tciErrors      :: !Int
+  , tciSkipped     :: !Int
+  , tciTimeElapsed :: !Double
+  , tciFqn         :: !Text
+  } deriving (Show, Eq)
 
 instance Show PluginExecution where
   show (PluginExecution g a v e m) =
