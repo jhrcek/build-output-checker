@@ -23,6 +23,7 @@ module Console.Types
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Time.Clock (DiffTime, picosecondsToDiffTime)
+import Text.Printf (printf)
 
 newtype RawLine = RawLine Text deriving (Show)
 
@@ -66,7 +67,7 @@ newtype RepoUrl = RepoUrl Text deriving (Eq, Show, Ord)
 newtype ElapsedTime = ElapsedTime DiffTime deriving (Show)
 -- Duration in seconds
 newtype Duration = Duration DiffTime deriving (Eq, Ord, Show)
-data FileSize = FileSize Double SizeUnit deriving (Show, Eq)
+data FileSize = FileSize Double SizeUnit deriving Eq
 data TransferType = Upload | Download deriving (Show, Eq)
 data TransferSpeed = TransferSpeed Double SizeUnit deriving (Show, Eq)
 data SizeUnit = B | KB | MB deriving (Show, Eq)
@@ -74,8 +75,29 @@ data TimedLogLine = TimedLogLine ElapsedTime LogLine deriving (Show)
 
 instance Semigroup Duration where
     Duration a <> Duration b = Duration (a + b)
+
 instance Monoid Duration where
     mempty = Duration 0
+
+getBytes :: FileSize -> Double
+getBytes (FileSize x u) = case u of
+    B  -> x
+    KB -> x * 1000
+    MB -> x * 1000000
+
+instance Show FileSize where
+  show fs
+     | bytes > 1000000 = printf "%.1fMB" (bytes / 1000000)
+     | bytes > 1000    = printf "%.1KB" (bytes /1000)
+     | otherwise       = printf "%.1B" bytes
+    where
+      bytes = getBytes fs
+
+instance Semigroup FileSize where
+  a <> b = FileSize (getBytes a + getBytes b) B
+
+instance Monoid FileSize where
+  mempty = FileSize 0 B
 
 getLogLine :: TimedLogLine -> LogLine
 getLogLine (TimedLogLine _ ll) = ll

@@ -1,21 +1,26 @@
-{-# LANGUAGE LambdaCase        #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase #-}
 
 module Console.Checks.MavenDownload
-  ( getMavenDownloadDurations
-  , getDistinctDownloadUrls
+  ( MavenData(..)
+  , getTimeSpentDownloading
+  , getDownloadSumary
   ) where
 
-import Console.Types (Duration (..), LogLine (..), RepoUrl, TimedLogLine (..),
+import Console.Types (Duration (..), FileSize, LogLine (..), TimedLogLine (..),
                       TransferType (Download), diffElapsed, getInterval,
                       getLogLine)
 import Data.List.Split (wordsBy)
 import Data.Set as Set
-import Data.Set (Set)
 
-getMavenDownloadDurations :: [TimedLogLine] -> [Duration]
-getMavenDownloadDurations =
-    fmap (uncurry diffElapsed . getInterval) . wordsBy (not . lineWithMavenDownload . getLogLine)
+data MavenData = MavenData
+    { urlsDownloaded       :: !Int
+    , totalDownloadSize    :: !FileSize
+    , timeSpentDownloading :: !Duration
+    }
+
+getTimeSpentDownloading :: [TimedLogLine] -> Duration
+getTimeSpentDownloading =
+    mconcat . fmap (uncurry diffElapsed . getInterval) . wordsBy (not . lineWithMavenDownload . getLogLine)
   where
       lineWithMavenDownload :: LogLine -> Bool
       lineWithMavenDownload = \case
@@ -23,10 +28,10 @@ getMavenDownloadDurations =
           MavenTransferEnd Download _ _ _ _ -> True
           _                                 -> False
 
-getDistinctDownloadUrls :: [LogLine] -> Set RepoUrl
-getDistinctDownloadUrls = foldMap toUrlSet
+getDownloadSumary :: [LogLine] -> (Int, FileSize)
+getDownloadSumary linez = (Set.size uniqueUrls, totDownloadSize)
   where
-    toUrlSet = \case
-        MavenTransferStart Download _ url   -> Set.singleton url
-        MavenTransferEnd Download _ url _ _ -> Set.singleton url
-        _                                   -> Set.empty
+    (uniqueUrls, totDownloadSize) = foldMap toUrlAndSize linez
+    toUrlAndSize = \case
+        MavenTransferEnd Download _ url fileSize _ -> (Set.singleton url, fileSize)
+        _                                          -> mempty

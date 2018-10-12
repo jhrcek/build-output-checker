@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 module Console.Checks.MavenPlugin (pluginDurations) where
+
 import Console.Types
 import Data.List (sortOn)
 import Data.Maybe (mapMaybe)

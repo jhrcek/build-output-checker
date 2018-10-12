@@ -16,27 +16,27 @@ import Data.Aeson (FromJSON, ToJSON, parseJSON, withObject, (.:))
 import Data.Aeson.Lens (key, _Array, _JSON)
 import Data.ByteString.Lazy (ByteString)
 import qualified Data.ByteString.Lazy as LBS
-import Data.List (sortBy)
+import Data.List (sortOn)
 import Data.Maybe (mapMaybe)
-import Data.Ord (Down (..), comparing)
+import Data.Ord (Down (..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
 
 data MethodDuration = MethodDuration
-    { tiClass    :: !Text
-    , tiMethod   :: !Text
-    , tiDuration :: !Double
+    { mdClass    :: !Text
+    , mdMethod   :: !Text
+    , mdDuration :: !Double
     } deriving (Eq, Show, Generic, ToJSON)
 
 instance FromJSON MethodDuration where
   parseJSON = withObject "MethodDuration" $ \o -> do
-    tiClass <- o .: "className"
-    tiMethod <- o .: "name"
-    tiDuration <- o .: "duration"
+    mdClass <- o .: "className"
+    mdMethod <- o .: "name"
+    mdDuration <- o .: "duration"
     return MethodDuration{..}
 
 getMethodDurations :: ByteString -> [MethodDuration]
-getMethodDurations jsonSource = do
+getMethodDurations jsonSource =
     jsonSource ^.. foldInfos
   where
     foldInfos :: Fold ByteString MethodDuration
@@ -49,11 +49,10 @@ getMethodDurations jsonSource = do
 
 readMethodDurations :: FilePath -> IO [MethodDuration]
 readMethodDurations junitReport =
-    (sortLongestFirst . getMethodDurations) <$> LBS.readFile junitReport
+    sortLongestFirst . getMethodDurations <$> LBS.readFile junitReport
   where
     sortLongestFirst :: [MethodDuration] -> [MethodDuration]
-    sortLongestFirst = sortBy (comparing (Down . tiDuration))
-
+    sortLongestFirst = sortOn (Down . mdDuration)
 
 getClassInfos :: [LogLine] -> [TestClassInfo]
 getClassInfos = sortClasses . mapMaybe getClassInfo
@@ -63,4 +62,4 @@ getClassInfos = sortClasses . mapMaybe getClassInfo
     getClassInfo _                          = Nothing
 
     sortClasses :: [TestClassInfo] -> [TestClassInfo]
-    sortClasses = sortBy (comparing (Down . tciTimeElapsed))
+    sortClasses = sortOn (Down . tciTimeElapsed)

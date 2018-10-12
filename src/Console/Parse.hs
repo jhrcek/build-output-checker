@@ -41,7 +41,8 @@ parseLineWithTimestamp line =
 parseLine :: Text -> LogLine
 parseLine txt = case parse logLineP "" txt of
     Right logLine -> logLine
-    Left es       -> error $ show es ++ T.unpack txt -- "This shouldn't happen as we're using 'Unknown' to classify not parsed log lines"
+    -- "This shouldn't happen as we're using 'Unknown' to classify not parsed log lines"
+    Left errors   -> error $ "Failed to parse line '" <> T.unpack txt <> "': " <> show errors
 
 logLineP :: Parser LogLine
 logLineP =
@@ -53,28 +54,29 @@ logLineP =
     mavenDownloadOrUploadP =
         (try (string "[INFO] Downloading from ") *>
              (MavenTransferStart Download <$> repoNameP
-                <*> (repoUrlP eof))) <|>
+                <*> repoUrlP eof)) <|>
         (try (string "[INFO] Downloaded from ") *>
              (MavenTransferEnd Download <$> repoNameP
-                <*> (repoUrlP (string " ("))
+                <*> repoUrlP (string " (")
                 <*> fileSizeP
                 <*> (Just <$> (string " at " *> transferSpeedP))))  <|>
         (try (string "[INFO] Uploading to ") *>
              (MavenTransferStart Upload <$> repoNameP
-                <*> (repoUrlP eof))) <|>
+                <*> repoUrlP eof)) <|>
         (try (string "[INFO] Uploaded to ") *>
              (MavenTransferEnd Upload <$> repoNameP
-                <*> (repoUrlP (string " ("))
+                <*> repoUrlP (string " (")
                 <*> fileSizeP
-                <*> (optionMaybe $  -- local uploads only have file size, e.g. "[INFO] Uploaded to local: file://... (1.3 kB)"
-                        string " at " *> transferSpeedP)))
+                -- local uploads only have file size, e.g. "[INFO] Uploaded to local: file://... (1.3 kB)"
+                <*> optionMaybe(string " at " *> transferSpeedP)))
+
             where
               repoNameP = RepoName . T.pack <$> anyChar `manyTill` string ": "
               repoUrlP :: Parser a -> Parser RepoUrl
               repoUrlP endP = RepoUrl . T.pack <$> anyChar `manyTill` endP
 
     pluginStartP =
-        (try (string "[INFO] --- ") *> (MavenPluginExecution <$> pluginExecutionP))
+        try (string "[INFO] --- ") *> (MavenPluginExecution <$> pluginExecutionP)
 
     junitTestClassSummayP =
       try (string "Tests run: " *> (JunitTestClassSummay <$> testClassInfoP))
@@ -104,19 +106,14 @@ pluginExecutionP = PluginExecution
     nonSpace = satisfy (/= ' ')
 
 fileSizeP :: Parser FileSize
-fileSizeP = do
-     sz <- doubleP
-     _ <- char ' '
-     unit <- sizeUnitP
-     return $ FileSize sz unit
+fileSizeP = FileSize
+    <$> (doubleP <* char ' ')
+    <*> sizeUnitP
 
 transferSpeedP :: Parser TransferSpeed
-transferSpeedP = do
-    spd <- doubleP
-    _ <- char ' '
-    unit <- sizeUnitP
-    _ <- string "/s)"
-    return $ TransferSpeed spd unit
+transferSpeedP = TransferSpeed
+    <$> (doubleP <* char ' ')
+    <*> (sizeUnitP <* string "/s)")
 
 sizeUnitP :: Parser SizeUnit
 sizeUnitP =
