@@ -4,10 +4,11 @@ module Console.Checks.MavenPlugin (pluginDurations) where
 import Console.Types
 import Data.List (sortOn)
 import Data.Maybe (mapMaybe)
+import Data.Ord (Down (..))
 
 pluginDurations :: [TimedLogLine] -> [(PluginExecution, Duration)]
 pluginDurations linez =
-    sortOn (\(_,duration) -> duration) $ zipWith calcDuration pluginStarts (tail pluginStarts)
+    sortOn (Down . snd {- duration descending -}) $ zipWith calcDuration pluginStarts (tail pluginStarts)
   where
     pluginStarts = mapMaybe getPluginExecution linez
 

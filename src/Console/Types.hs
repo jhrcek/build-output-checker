@@ -18,6 +18,7 @@ module Console.Types
   , mkElapsedTime
   , getInterval
   , getLogLine
+  , secondsToDuration
   ) where
 
 import Data.Text (Text)
@@ -38,9 +39,9 @@ data LogLine
 
 
 data PluginExecution = PluginExecution
-    { pluginGroupId     :: !Text
-    , pluginArtifactId  :: !Text
+    { pluginName        :: !Text
     , pluginVersion     :: !Text
+    , pluginGoal        :: !Text
     , pluginExecutionId :: !Text
     , pluginMavenModue  :: !Text
     } deriving Eq
@@ -112,6 +113,10 @@ diffElapsed (ElapsedTime a) (ElapsedTime b) = Duration $ abs (a - b)
 mkElapsedTime :: Double -> ElapsedTime
 mkElapsedTime =
     ElapsedTime . picosecondsToDiffTime .  round . (*10^(12::Int))
+
+secondsToDuration :: Double -> Duration
+secondsToDuration =
+    Duration . picosecondsToDiffTime .  round . (*10^(12::Int))
 
 {-|  Get first and last timestamp from a list of log lines.
  WARNING: This assumes the lines are sorted by timestamp!

@@ -9,7 +9,8 @@ import Console.Checks.TestDuration (getClassInfos, mdDuration,
                                     readMethodDurations)
 import Console.Parse (parseTimestamps)
 import Console.Report (ReportData (..), writeReport)
-import Console.Types (diffElapsed, getInterval, getLogLine, tciTimeElapsed)
+import Console.Types (diffElapsed, getInterval, getLogLine, secondsToDuration,
+                      tciTimeElapsed)
 import qualified Data.Text.IO as T
 
 main :: IO ()
@@ -21,6 +22,7 @@ main = do
         slowTestMethods = takeWhile (\methodInfo -> mdDuration methodInfo > 20) testInfos
         slowTestClasses = takeWhile (\classInfo -> tciTimeElapsed classInfo > 60) $ getClassInfos log_plain
         (urlsDownloaded, totalDownloadSize) = getDownloadSumary log_plain
+        slowPlugins = takeWhile (\(_pluginEx, duration) -> duration > secondsToDuration 60) $ pluginDurations log_ts
         mavenData = MavenData
             { urlsDownloaded = urlsDownloaded
             , totalDownloadSize = totalDownloadSize
@@ -28,6 +30,3 @@ main = do
             }
     let reportData = ReportData {..}
     writeReport reportData "report.html"
-
-    -- TODO include in the report
-    mapM_ print . take 10 . reverse $ pluginDurations log_ts
