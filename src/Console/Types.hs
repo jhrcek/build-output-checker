@@ -24,8 +24,9 @@ module Console.Types
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Data.Time.Clock (DiffTime, picosecondsToDiffTime)
+import Data.Time.Format (defaultTimeLocale, formatTime)
+import Data.Time.LocalTime (timeToTimeOfDay)
 import Text.Printf (printf)
-
 newtype RawLine = RawLine Text deriving (Show)
 
 data LogLine
@@ -67,7 +68,7 @@ newtype RepoUrl = RepoUrl Text deriving (Eq, Show, Ord)
 -- Time elapsed from the time the build started
 newtype ElapsedTime = ElapsedTime DiffTime deriving (Show)
 -- Duration in seconds
-newtype Duration = Duration DiffTime deriving (Eq, Ord, Show)
+newtype Duration = Duration DiffTime deriving (Eq, Ord)
 data FileSize = FileSize Double SizeUnit deriving Eq
 data TransferType = Upload | Download deriving (Show, Eq)
 data TransferSpeed = TransferSpeed Double SizeUnit deriving (Show, Eq)
@@ -79,6 +80,9 @@ instance Semigroup Duration where
 
 instance Monoid Duration where
     mempty = Duration 0
+
+instance Show Duration where
+    show (Duration dt) = formatTime defaultTimeLocale "%T" $ timeToTimeOfDay dt
 
 getBytes :: FileSize -> Double
 getBytes (FileSize x u) = case u of

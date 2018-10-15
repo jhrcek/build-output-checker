@@ -56,14 +56,14 @@ slowPluginsView :: [(PluginExecution, Duration)] -> Html
 slowPluginsView pluginDurations = details $ do
     summary $ text "Slowest plugin executions"
     table $ do
-        tr $ traverse_ th ["Plugin", "Version", "Goal", "Execution", "Maven module", "Duration (s)"]
+        tr $ traverse_ th ["Plugin", "Version", "Goal", "Execution", "Maven module", "Duration (HH:MM:SS)"]
         mapM_ slowPluginRow pluginDurations
 
 summedUpDurationsView :: [(Text, Duration)] -> Html
 summedUpDurationsView summedUpDurations = details $ do
     summary $ text "Total duration per plugin"
     table $ do
-        tr $ th "Plugin" >> th "Duration (s)"
+        tr $ th "Plugin" >> th "Duration (HH:MM:SS)"
         mapM_ pluginSummary summedUpDurations
     where
       pluginSummary (plName, duration) = tr $ do
