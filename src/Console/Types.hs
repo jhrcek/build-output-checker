@@ -56,8 +56,8 @@ data TestClassInfo = TestClassInfo
   } deriving (Show, Eq)
 
 instance Show PluginExecution where
-  show (PluginExecution g a v e m) =
-      Text.unpack $ g <> ":" <> a <> ":" <> v <> " ("<> e <>") @ " <> m
+  show (PluginExecution name vers goal exec modul) =
+      Text.unpack $ name <> ":" <> vers <> ":" <> goal <> " ("<> exec <>") @ " <> modul
 
 data LogLevel = INFO | WARNING | ERROR deriving (Show, Eq)
 

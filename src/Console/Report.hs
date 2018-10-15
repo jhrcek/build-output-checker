@@ -1,27 +1,32 @@
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards   #-}
 module Console.Report (writeReport, ReportData(..)) where
 
 import Console.Checks.MavenDownload (MavenData, timeSpentDownloading,
                                      totalDownloadSize, urlsDownloaded)
+import Console.Checks.MavenPlugin (PluginStats (..))
 import Console.Checks.TestDuration (MethodDuration (..), mdClass, mdDuration,
                                     mdMethod)
 import Console.Types
 import Data.Foldable (traverse_)
+import Data.Text (Text)
 import qualified Data.Text as Text
 import qualified Data.Text.Lazy.IO as Text
+import Prelude hiding (div)
 import Text.Blaze.Html.Renderer.Text (renderHtml)
-import Text.Blaze.Html5 (Html, body, details, docTypeHtml, meta, string,
+import Text.Blaze.Html5 (Html, body, details, div, docTypeHtml, meta, string,
                          summary, table, td, text, th, tr, (!))
 import qualified Text.Blaze.Html5 as H
 import Text.Blaze.Html5.Attributes hiding (summary)
+
 
 data ReportData = ReportData
     { slowTestClasses :: [TestClassInfo]
     , slowTestMethods :: [MethodDuration]
     , mavenData       :: !MavenData
     , buildDuration   :: !Duration
-    , slowPlugins     :: [(PluginExecution, Duration)]
+    , pluginStats     :: !PluginStats
     }
 
 writeReport :: ReportData -> FilePath -> IO ()
@@ -40,17 +45,33 @@ reportView ReportData{..} =
             mavenDataView mavenData
             slowTestClassesView slowTestClasses
             slowTestMethodsView slowTestMethods
-            slowPluginsView slowPlugins
+            pluginStatsView pluginStats
+
+pluginStatsView :: PluginStats -> Html
+pluginStatsView PluginStats{pluginDurations, durationPerPlugin} = div $ do
+    slowPluginsView pluginDurations
+    summedUpDurationsView durationPerPlugin
 
 slowPluginsView :: [(PluginExecution, Duration)] -> Html
-slowPluginsView items = details $ do
-      summary $ text "Slow plugins"
-      table $ do
-          tr $ traverse_ th ["Plugin", "Version", "Goal", "Execution", "Maven module", "Duration (s)"]
-          mapM_ pluginRow items
+slowPluginsView pluginDurations = details $ do
+    summary $ text "Slowest plugin executions"
+    table $ do
+        tr $ traverse_ th ["Plugin", "Version", "Goal", "Execution", "Maven module", "Duration (s)"]
+        mapM_ slowPluginRow pluginDurations
 
-pluginRow :: (PluginExecution, Duration) -> Html
-pluginRow (PluginExecution{..}, duration) = tr $ do
+summedUpDurationsView :: [(Text, Duration)] -> Html
+summedUpDurationsView summedUpDurations = details $ do
+    summary $ text "Total duration per plugin"
+    table $ do
+        tr $ th "Plugin" >> th "Duration (s)"
+        mapM_ pluginSummary summedUpDurations
+    where
+      pluginSummary (plName, duration) = tr $ do
+        td $ text plName
+        td $ sh duration
+
+slowPluginRow :: (PluginExecution, Duration) -> Html
+slowPluginRow (PluginExecution{..}, duration) = tr $ do
     td $ text pluginName
     td $ text pluginVersion
     td $ text pluginGoal
@@ -60,7 +81,7 @@ pluginRow (PluginExecution{..}, duration) = tr $ do
 
 summaryView :: Duration -> Html
 summaryView buildDuration =
-    H.div . text . Text.pack $ "The build took " <> show buildDuration
+    div . text . Text.pack $ "The build took " <> show buildDuration
 
 slowTestMethodsView :: [MethodDuration] -> Html
 slowTestMethodsView tcs = details $ do
@@ -90,7 +111,7 @@ classRow TestClassInfo{..} = tr $ do
 
 mavenDataView :: MavenData -> Html
 mavenDataView md =
-  H.div . text . Text.pack $
+  div . text . Text.pack $
       "Maven spent " <> show (timeSpentDownloading md) <>
       " downloading " <> show (urlsDownloaded md) <>
       " artifacts, total size  " <> show (totalDownloadSize md)
