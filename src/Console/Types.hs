@@ -93,8 +93,8 @@ getBytes (FileSize x u) = case u of
 instance Show FileSize where
   show fs
      | bytes > 1000000 = printf "%.1fMB" (bytes / 1000000)
-     | bytes > 1000    = printf "%.1KB" (bytes /1000)
-     | otherwise       = printf "%.1B" bytes
+     | bytes > 1000    = printf "%.1fKB" (bytes /1000)
+     | otherwise       = printf "%.1fB" bytes
     where
       bytes = getBytes fs
 
