@@ -48,23 +48,35 @@ reportView ReportData{..} =
             pluginStatsView pluginStats
 
 pluginStatsView :: PluginStats -> Html
-pluginStatsView PluginStats{pluginDurations, durationPerPlugin} = div $ do
+pluginStatsView PluginStats{pluginDurations, durationPerPlugin, pluginsWithMultipleVersions} = div $ do
     slowPluginsView pluginDurations
     summedUpDurationsView durationPerPlugin
+    pluginsWithMultipleVersionsView pluginsWithMultipleVersions
+
+pluginsWithMultipleVersionsView :: [(PluginName, [PluginVersion])] -> Html
+pluginsWithMultipleVersionsView xs = details $ do
+    summary $ text "Plugins with multiple versions"
+    table $ do
+        tr $ th "Plugin" >> th "Versions"
+        traverse_ pluginRow xs
+    where
+      pluginRow (plugName, versionList) = tr $ do
+          td $ text plugName
+          td $ sh versionList
 
 slowPluginsView :: [(PluginExecution, Duration)] -> Html
 slowPluginsView pluginDurations = details $ do
     summary $ text "Slowest plugin executions"
     table $ do
         tr $ traverse_ th ["Plugin", "Version", "Goal", "Execution", "Maven module", "Duration (HH:MM:SS)"]
-        mapM_ slowPluginRow pluginDurations
+        traverse_ slowPluginRow pluginDurations
 
 summedUpDurationsView :: [(Text, Duration)] -> Html
 summedUpDurationsView summedUpDurations = details $ do
     summary $ text "Total duration per plugin"
     table $ do
         tr $ th "Plugin" >> th "Duration (HH:MM:SS)"
-        mapM_ pluginSummary summedUpDurations
+        traverse_ pluginSummary summedUpDurations
     where
       pluginSummary (plName, duration) = tr $ do
         td $ text plName
@@ -88,7 +100,7 @@ slowTestMethodsView tcs = details $ do
     summary $ text "Slow test methods"
     table $ do
         tr (th "Class name" >> th "Method Name" >> th "Duration (s)")
-        mapM_ methodRow tcs
+        traverse_ methodRow tcs
 
 methodRow :: MethodDuration -> Html
 methodRow MethodDuration{..} = tr $ do
@@ -101,7 +113,7 @@ slowTestClassesView tcs = details $ do
     summary $ text "Slow test classes"
     table $ do
         tr (th "Class Name" >> th "Duration (s)" >> th "Methods")
-        mapM_ classRow tcs
+        traverse_ classRow tcs
 
 classRow :: TestClassInfo -> Html
 classRow TestClassInfo{..} = tr $ do

@@ -13,6 +13,8 @@ module Console.Types
   , TestClassInfo(..)
   , TransferSpeed(..)
   , TransferType(..)
+  , PluginName
+  , PluginVersion
   , diffElapsed
   , getElapsedTime
   , mkElapsedTime
@@ -40,8 +42,8 @@ data LogLine
 
 
 data PluginExecution = PluginExecution
-    { pluginName        :: !Text
-    , pluginVersion     :: !Text
+    { pluginName        :: !PluginName
+    , pluginVersion     :: !PluginVersion
     , pluginGoal        :: !Text
     , pluginExecutionId :: !Text
     , pluginMavenModue  :: !Text
@@ -64,6 +66,8 @@ data LogLevel = INFO | WARNING | ERROR deriving (Show, Eq)
 
 newtype RepoName = RepoName Text deriving (Eq, Show)
 newtype RepoUrl = RepoUrl Text deriving (Eq, Show, Ord)
+type PluginName = Text
+type PluginVersion = Text
 
 -- Time elapsed from the time the build started
 newtype ElapsedTime = ElapsedTime DiffTime deriving (Show)
