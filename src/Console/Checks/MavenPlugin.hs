@@ -60,5 +60,5 @@ calcDuration (pl1, start1) (_, start2)
 
 getPluginExecution :: TimedLogLine -> Maybe (PluginExecution, ElapsedTime)
 getPluginExecution = \case
-    (TimedLogLine et (MavenPluginExecution ple)) -> Just (ple, et)
-    _                                            -> Nothing
+    (TimedLogLine et (PluginExecutionLine ple)) -> Just (ple, et)
+    _                                           -> Nothing

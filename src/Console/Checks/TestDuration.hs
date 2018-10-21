@@ -9,7 +9,7 @@ module Console.Checks.TestDuration
     , getClassInfos
     ) where
 
-import Console.Types (LogLine (JunitTestClassSummay), TestClassInfo,
+import Console.Types (LogLine (TestClassInfoLine), TestClassInfo,
                       tciTimeElapsed)
 import Control.Lens (Fold, (^..))
 import Data.Aeson (FromJSON, ToJSON, parseJSON, withObject, (.:))
@@ -58,8 +58,8 @@ getClassInfos :: [LogLine] -> [TestClassInfo]
 getClassInfos = sortClasses . mapMaybe getClassInfo
   where
     getClassInfo :: LogLine -> Maybe TestClassInfo
-    getClassInfo (JunitTestClassSummay tci) = Just tci
-    getClassInfo _                          = Nothing
+    getClassInfo (TestClassInfoLine tci) = Just tci
+    getClassInfo _                       = Nothing
 
     sortClasses :: [TestClassInfo] -> [TestClassInfo]
     sortClasses = sortOn (Down . tciTimeElapsed)

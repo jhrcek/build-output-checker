@@ -1,16 +1,22 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE LambdaCase      #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Console.Checks.MavenDownload
   ( MavenData(..)
-  , getTimeSpentDownloading
-  , getDownloadSumary
+  , getMavenDownloadData
   ) where
 
-import Console.Types (Duration (..), FileSize, LogLine (..), TimedLogLine (..),
-                      TransferType (Download), diffElapsed, getInterval,
-                      getLogLine)
+import Console.Types (Duration (..), FileSize, LogLine (..), MavenTransfer (..),
+                      TimedLogLine (..), TransferStartOrEnd (..),
+                      TransferType (..), diffElapsed, getInterval, getLogLine)
 import Data.List.Split (wordsBy)
 import Data.Set as Set
+
+getMavenDownloadData :: [TimedLogLine] -> MavenData
+getMavenDownloadData timedLines = MavenData {..}
+  where
+    (urlsDownloaded, totalDownloadSize) = getDownloadSummary $ getLogLine <$> timedLines
+    timeSpentDownloading = getTimeSpentDownloading timedLines
 
 data MavenData = MavenData
     { urlsDownloaded       :: !Int
@@ -24,14 +30,13 @@ getTimeSpentDownloading =
   where
       lineWithMavenDownload :: LogLine -> Bool
       lineWithMavenDownload = \case
-          MavenTransferStart Download _ _   -> True
-          MavenTransferEnd Download _ _ _ _ -> True
-          _                                 -> False
+          MavenTransferLine (MavenTransfer Download _ _ _)   -> True
+          _                                                  -> False
 
-getDownloadSumary :: [LogLine] -> (Int, FileSize)
-getDownloadSumary linez = (Set.size uniqueUrls, totDownloadSize)
+getDownloadSummary :: [LogLine] -> (Int, FileSize)
+getDownloadSummary linez = (Set.size uniqueUrls, totDownloadSize)
   where
     (uniqueUrls, totDownloadSize) = foldMap toUrlAndSize linez
     toUrlAndSize = \case
-        MavenTransferEnd Download _ url fileSize _ -> (Set.singleton url, fileSize)
-        _                                          -> mempty
+        MavenTransferLine (MavenTransfer Download _ url (TransferEnd fileSize _)) -> (Set.singleton url, fileSize)
+        _                                                                         -> mempty

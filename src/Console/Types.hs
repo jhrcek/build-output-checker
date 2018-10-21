@@ -4,17 +4,19 @@ module Console.Types
   , ElapsedTime(..)
   , FileSize(..)
   , LogLine(..)
+  , MavenTransfer(..)
   , PluginExecution(..)
+  , PluginName
+  , PluginVersion
   , RawLine(..)
   , RepoName(..)
   , RepoUrl(..)
   , SizeUnit(..)
-  , TimedLogLine(..)
   , TestClassInfo(..)
+  , TimedLogLine(..)
   , TransferSpeed(..)
+  , TransferStartOrEnd(..)
   , TransferType(..)
-  , PluginName
-  , PluginVersion
   , diffElapsed
   , getElapsedTime
   , mkElapsedTime
@@ -32,14 +34,19 @@ import Text.Printf (printf)
 newtype RawLine = RawLine Text deriving (Show)
 
 data LogLine
-    = MavenTransferStart !TransferType !RepoName !RepoUrl
-    | MavenTransferEnd !TransferType !RepoName !RepoUrl !FileSize !(Maybe TransferSpeed)
-    | MavenPluginExecution !PluginExecution
-    | JunitTestClassSummay !TestClassInfo
+    = MavenTransferLine !MavenTransfer
+    | PluginExecutionLine !PluginExecution
+    | TestClassInfoLine !TestClassInfo
     | Maven !LogLevel !Text
     | Unknown
     deriving (Show, Eq)
 
+data MavenTransfer = MavenTransfer
+    { transferType       :: !TransferType
+    , repoName           :: !RepoName
+    , repoUrl            :: !RepoUrl
+    , transferStartOrEnd :: TransferStartOrEnd
+    } deriving (Eq, Show)
 
 data PluginExecution = PluginExecution
     { pluginName        :: !PluginName
@@ -64,7 +71,7 @@ instance Show PluginExecution where
 
 data LogLevel = INFO | WARNING | ERROR deriving (Show, Eq)
 
-newtype RepoName = RepoName Text deriving (Eq, Show)
+newtype RepoName = RepoName Text deriving (Eq, Show, Ord)
 newtype RepoUrl = RepoUrl Text deriving (Eq, Show, Ord)
 type PluginName = Text
 type PluginVersion = Text
@@ -73,11 +80,18 @@ type PluginVersion = Text
 newtype ElapsedTime = ElapsedTime DiffTime deriving (Show)
 -- Duration in seconds
 newtype Duration = Duration DiffTime deriving (Eq, Ord)
-data FileSize = FileSize Double SizeUnit deriving Eq
-data TransferType = Upload | Download deriving (Show, Eq)
+
+-- Stuff related to maven download / upload info
+data TransferType = Upload | Download deriving (Show, Eq, Ord)
 data TransferSpeed = TransferSpeed Double SizeUnit deriving (Show, Eq)
+data TransferStartOrEnd
+    = TransferStart
+    | TransferEnd !FileSize !(Maybe TransferSpeed)
+    deriving (Show, Eq)
+data FileSize = FileSize Double SizeUnit deriving Eq
 data SizeUnit = B | KB | MB deriving (Show, Eq)
 data TimedLogLine = TimedLogLine ElapsedTime LogLine deriving (Show)
+
 
 instance Semigroup Duration where
     Duration a <> Duration b = Duration (a + b)

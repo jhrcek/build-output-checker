@@ -2,8 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import Console.Checks.MavenDownload (MavenData (..), getDownloadSumary,
-                                     getTimeSpentDownloading)
+import Console.Checks.MavenDownload (getMavenDownloadData)
 import Console.Checks.MavenPlugin (getPluginStats)
 import Console.Checks.TestDuration (getClassInfos, mdDuration,
                                     readMethodDurations)
@@ -20,13 +19,8 @@ main = do
         buildDuration = uncurry diffElapsed $ getInterval log_ts
         slowTestMethods = takeWhile (\methodInfo -> mdDuration methodInfo > 20) testInfos
         slowTestClasses = takeWhile (\classInfo -> tciTimeElapsed classInfo > 60) $ getClassInfos log_plain
-        (urlsDownloaded, totalDownloadSize) = getDownloadSumary log_plain
         pluginStats = getPluginStats log_ts
-        timeSpentDownloading = getTimeSpentDownloading log_ts
-        mavenData = MavenData
-            urlsDownloaded
-            totalDownloadSize
-            timeSpentDownloading
+        mavenData = getMavenDownloadData log_ts
         reportData = ReportData
             slowTestClasses
             slowTestMethods

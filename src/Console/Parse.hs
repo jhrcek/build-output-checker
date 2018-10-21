@@ -46,41 +46,41 @@ parseLine txt = case parse logLineP "" txt of
 
 logLineP :: Parser LogLine
 logLineP =
-      mavenDownloadOrUploadP
-  <|> pluginStartP
-  <|> junitTestClassSummayP
+      pluginStartP
+  <|> mavenTransferLineP
+  <|> testClassInfoLineP
   <|> pure Unknown
   where
-    mavenDownloadOrUploadP =
-        (try (string "[INFO] Downloading from ") *>
-             (MavenTransferStart Download <$> repoNameP
-                <*> repoUrlP eof)) <|>
-        (try (string "[INFO] Downloaded from ") *>
-             (MavenTransferEnd Download <$> repoNameP
-                <*> repoUrlP (string " (")
-                <*> fileSizeP
-                <*> (Just <$> (string " at " *> transferSpeedP))))  <|>
-        (try (string "[INFO] Uploading to ") *>
-             (MavenTransferStart Upload <$> repoNameP
-                <*> repoUrlP eof)) <|>
-        (try (string "[INFO] Uploaded to ") *>
-             (MavenTransferEnd Upload <$> repoNameP
-                <*> repoUrlP (string " (")
-                <*> fileSizeP
-                -- local uploads only have file size, e.g. "[INFO] Uploaded to local: file://... (1.3 kB)"
-                <*> optionMaybe(string " at " *> transferSpeedP)))
-
-            where
-              repoNameP = RepoName . T.pack <$> anyChar `manyTill` string ": "
-              repoUrlP :: Parser a -> Parser RepoUrl
-              repoUrlP endP = RepoUrl . T.pack <$> anyChar `manyTill` endP
-
+    mavenTransferLineP =
+        MavenTransferLine <$> mavenTransferP
     pluginStartP =
-        try (string "[INFO] --- ") *> (MavenPluginExecution <$> pluginExecutionP)
+        try (string "[INFO] --- ") *> (PluginExecutionLine <$> pluginExecutionP)
+    testClassInfoLineP =
+        try (string "Tests run: " *> (TestClassInfoLine <$> testClassInfoP))
 
-    junitTestClassSummayP =
-      try (string "Tests run: " *> (JunitTestClassSummay <$> testClassInfoP))
+mavenTransferP :: Parser MavenTransfer
+mavenTransferP =
+    (try (string "[INFO] Downloading from ") *>
+         (MavenTransfer Download <$> repoNameP
+            <*> repoUrlP eof <*> pure TransferStart)) <|>
+    (try (string "[INFO] Downloaded from ") *>
+         (MavenTransfer Download <$> repoNameP
+            <*> repoUrlP (string " (")
+            <*> (TransferEnd <$> fileSizeP <*> (Just <$> (string " at " *> transferSpeedP)))))  <|>
+    (try (string "[INFO] Uploading to ") *>
+         (MavenTransfer Upload <$> repoNameP
+            <*> repoUrlP eof <*> pure TransferStart)) <|>
+    (try (string "[INFO] Uploaded to ") *>
+         (MavenTransfer Upload <$> repoNameP
+            <*> repoUrlP (string " (")
+            <*> (TransferEnd <$> fileSizeP
+              -- local uploads only have file size, e.g. "[INFO] Uploaded to local: file://... (1.3 kB)"
+              <*> optionMaybe (string " at " *> transferSpeedP))))
 
+        where
+          repoNameP = RepoName . T.pack <$> anyChar `manyTill` string ": "
+          repoUrlP :: Parser a -> Parser RepoUrl
+          repoUrlP endP = RepoUrl . T.pack <$> anyChar `manyTill` endP
 
 -- "Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.694 sec - in org.jbpm.process.workitem.camel.CamelSqlTest"
 testClassInfoP :: Parser TestClassInfo
