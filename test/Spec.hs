@@ -33,6 +33,15 @@ main = hspec $ do
       it "should parse lines with test class info" $
         parseLine "Tests run: 1, Failures: 2, Errors: 3, Skipped: 4, Time elapsed: 5.694 sec - in org.jbpm.process.workitem.camel.CamelSqlTest"
           `shouldBe` TestClassInfoLine (TestClassInfo 1 2 3 4 5.694 "org.jbpm.process.workitem.camel.CamelSqlTest")
+      it "should parse Maven INFO log lines" $
+        parseLine "[INFO] Adding ignore: org.joda.time.*"
+          `shouldBe` Maven INFO "Adding ignore: org.joda.time.*"
+      it "should parse Maven WARN log lines" $
+        parseLine "[WARNING] JAR will be empty - no content was marked for inclusion!"
+          `shouldBe` Maven WARNING "JAR will be empty - no content was marked for inclusion!"
+      it "should parse Maven ERROR log lines" $
+        parseLine "[ERROR] Found 1 illegal transitive type dependencies in artifact 'org.uberfire:uberfire-project-backend:jar:2.11.0.20181022-121005':"
+          `shouldBe` Maven ERROR "Found 1 illegal transitive type dependencies in artifact 'org.uberfire:uberfire-project-backend:jar:2.11.0.20181022-121005':"
   describe "Console.Checks.JunitReport" $
       describe "MethodDuration" $
         it "should parse single MethodDuration JSON object" $

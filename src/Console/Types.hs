@@ -3,6 +3,7 @@ module Console.Types
   ( Duration(..)
   , ElapsedTime(..)
   , FileSize(..)
+  , LogLevel(..)
   , LogLine(..)
   , MavenTransfer(..)
   , PluginExecution(..)
@@ -45,7 +46,7 @@ data MavenTransfer = MavenTransfer
     { transferType       :: !TransferType
     , repoName           :: !RepoName
     , repoUrl            :: !RepoUrl
-    , transferStartOrEnd :: TransferStartOrEnd
+    , transferStartOrEnd :: !TransferStartOrEnd
     } deriving (Eq, Show)
 
 data PluginExecution = PluginExecution
