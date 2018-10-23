@@ -8,7 +8,10 @@ import Console.Checks.TestDuration (getClassInfos, mdDuration,
                                     readMethodDurations)
 import Console.Parse (parseTimestamps)
 import Console.Report (ReportData (..), writeReport)
-import Console.Types (diffElapsed, getInterval, getLogLine, tciTimeElapsed)
+import Console.Types (LogLevel (..), LogLine (Maven), diffElapsed, getInterval,
+                      getLogLine, tciTimeElapsed)
+import Data.Maybe (mapMaybe)
+import Data.Text (Text)
 import qualified Data.Text.IO as T
 
 main :: IO ()
@@ -28,3 +31,8 @@ main = do
             buildDuration
             pluginStats
     writeReport reportData "report.html"
+    mapM_ T.putStrLn $ mapMaybe extractError log_plain
+
+extractError :: LogLine -> Maybe Text
+extractError (Maven ERROR e) = Just e
+extractError _               = Nothing

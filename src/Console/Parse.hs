@@ -49,6 +49,7 @@ logLineP =
       pluginStartP
   <|> mavenTransferLineP
   <|> testClassInfoLineP
+  <|> mavenLogMessageP
   <|> pure Unknown
   where
     mavenTransferLineP =
@@ -57,6 +58,15 @@ logLineP =
         try (string "[INFO] --- ") *> (PluginExecutionLine <$> pluginExecutionP)
     testClassInfoLineP =
         try (string "Tests run: " *> (TestClassInfoLine <$> testClassInfoP))
+
+mavenLogMessageP :: Parser LogLine
+mavenLogMessageP =
+    parseLevel INFO <|> parseLevel WARNING <|> parseLevel ERROR
+  where
+    parseLevel :: LogLevel -> Parser LogLine
+    parseLevel level =
+        try (string $ "[" <> show level <> "] ")
+        *> (Maven level . T.pack <$> anyChar `manyTill` eof)
 
 mavenTransferP :: Parser MavenTransfer
 mavenTransferP =

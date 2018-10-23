@@ -3,6 +3,7 @@ module Console.Types
   ( Duration(..)
   , ElapsedTime(..)
   , FileSize(..)
+  , LogLevel(..)
   , LogLine(..)
   , MavenTransfer(..)
   , PluginExecution(..)
