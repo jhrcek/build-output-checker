@@ -8,7 +8,7 @@ module Console.Checks.MavenDownload
 
 import Console.Types (Duration (..), FileSize, LogLine (..), MavenTransfer (..),
                       TimedLogLine (..), TransferStartOrEnd (..),
-                      TransferType (..), diffElapsed, getInterval, getLogLine)
+                      TransferType (..), getDuration, getLogLine)
 import Data.List.Split (wordsBy)
 import Data.Set as Set
 
@@ -26,7 +26,7 @@ data MavenData = MavenData
 
 getTimeSpentDownloading :: [TimedLogLine] -> Duration
 getTimeSpentDownloading =
-    mconcat . fmap (uncurry diffElapsed . getInterval) . wordsBy (not . lineWithMavenDownload . getLogLine)
+    mconcat . fmap getDuration . wordsBy (not . lineWithMavenDownload . getLogLine)
   where
       lineWithMavenDownload :: LogLine -> Bool
       lineWithMavenDownload = \case

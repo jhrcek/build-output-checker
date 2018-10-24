@@ -50,6 +50,7 @@ logLineP =
   <|> mavenTransferLineP
   <|> testClassInfoLineP
   <|> mavenLogMessageP
+  <|> repoActionStartP
   <|> pure Unknown
   where
     mavenTransferLineP =
@@ -58,6 +59,8 @@ logLineP =
         try (string "[INFO] --- ") *> (PluginExecutionLine <$> pluginExecutionP)
     testClassInfoLineP =
         try (string "Tests run: " *> (TestClassInfoLine <$> testClassInfoP))
+    repoActionStartP =
+        try (string "Repository: " *> (RepoActionStart . GitRepoName <$> restOfLineP))
 
 mavenLogMessageP :: Parser LogLine
 mavenLogMessageP =
@@ -66,7 +69,7 @@ mavenLogMessageP =
     parseLevel :: LogLevel -> Parser LogLine
     parseLevel level =
         try (string $ "[" <> show level <> "] ")
-        *> (Maven level . T.pack <$> anyChar `manyTill` eof)
+        *> (Maven level <$> restOfLineP)
 
 mavenTransferP :: Parser MavenTransfer
 mavenTransferP =
@@ -88,7 +91,7 @@ mavenTransferP =
               <*> optionMaybe (string " at " *> transferSpeedP))))
 
         where
-          repoNameP = RepoName . T.pack <$> anyChar `manyTill` string ": "
+          repoNameP = M2RepoName . T.pack <$> anyChar `manyTill` string ": "
           repoUrlP :: Parser a -> Parser RepoUrl
           repoUrlP endP = RepoUrl . T.pack <$> anyChar `manyTill` endP
 
@@ -100,7 +103,7 @@ testClassInfoP = TestClassInfo
     <*> (intP <* string ", Skipped: ")
     <*> (intP <* string ", Time elapsed: ")
     <*> (doubleP <* string " sec - in ")
-    <*> (T.pack <$> (anyChar `manyTill` eof))
+    <*> restOfLineP
 
 -- Parse "maven-clean-plugin:3.0.0:clean (default-clean) @ uberfire-widgets-properties-editor-backend ---"
 pluginExecutionP :: Parser PluginExecution
@@ -139,3 +142,7 @@ doubleP = read <$> ((<>) <$> number <*> decimal)
 
 intP :: Parser Int
 intP = read <$> many1 digit
+
+restOfLineP :: Parser Text
+restOfLineP =
+    T.pack <$> anyChar `manyTill` eof

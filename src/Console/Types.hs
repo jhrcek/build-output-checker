@@ -3,6 +3,7 @@ module Console.Types
   ( Duration(..)
   , ElapsedTime(..)
   , FileSize(..)
+  , GitRepoName(..)
   , LogLevel(..)
   , LogLine(..)
   , MavenTransfer(..)
@@ -10,7 +11,7 @@ module Console.Types
   , PluginName
   , PluginVersion
   , RawLine(..)
-  , RepoName(..)
+  , M2RepoName(..)
   , RepoUrl(..)
   , SizeUnit(..)
   , TestClassInfo(..)
@@ -21,7 +22,7 @@ module Console.Types
   , diffElapsed
   , getElapsedTime
   , mkElapsedTime
-  , getInterval
+  , getDuration
   , getLogLine
   , secondsToDuration
   ) where
@@ -39,12 +40,13 @@ data LogLine
     | PluginExecutionLine !PluginExecution
     | TestClassInfoLine !TestClassInfo
     | Maven !LogLevel !Text
+    | RepoActionStart !GitRepoName
     | Unknown
     deriving (Show, Eq)
 
 data MavenTransfer = MavenTransfer
     { transferType       :: !TransferType
-    , repoName           :: !RepoName
+    , m2RepoName         :: !M2RepoName
     , repoUrl            :: !RepoUrl
     , transferStartOrEnd :: !TransferStartOrEnd
     } deriving (Eq, Show)
@@ -72,7 +74,8 @@ instance Show PluginExecution where
 
 data LogLevel = INFO | WARNING | ERROR deriving (Show, Eq)
 
-newtype RepoName = RepoName Text deriving (Eq, Show, Ord)
+newtype M2RepoName = M2RepoName Text deriving (Eq, Show, Ord)
+newtype GitRepoName = GitRepoName Text deriving (Eq, Show, Ord)
 newtype RepoUrl = RepoUrl Text deriving (Eq, Show, Ord)
 type PluginName = Text
 type PluginVersion = Text
@@ -145,7 +148,11 @@ secondsToDuration =
  WARNING: This assumes the lines are sorted by timestamp!
 -}
 getInterval :: [TimedLogLine] -> (ElapsedTime, ElapsedTime)
+getInterval [] = error "getInterval : can't get interval of empty list"
 getInterval xs =
     ( getElapsedTime (head xs)
     , getElapsedTime (last xs)
     )
+
+getDuration :: [TimedLogLine] -> Duration
+getDuration = uncurry diffElapsed . getInterval

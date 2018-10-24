@@ -1,6 +1,6 @@
 {-# LANGUAGE LambdaCase      #-}
 {-# LANGUAGE RecordWildCards #-}
-module Console.Checks.MavenPlugin (getPluginStats, PluginStats(..)) where
+module Console.Checks.MavenPlugin (getPluginStats, PluginStats(..), sortByDurationDescending) where
 
 import Console.Types
 import Data.List (sortOn)

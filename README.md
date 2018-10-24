@@ -11,6 +11,7 @@ Input for analysis are plain [console text with timestamps](https://rhba-jenkins
 - [x] How long do individual test classes / methods take?
 - [x] Which maven plugins / executions are slow?
 - [x] Are there different versions of the same plugin used throughout the build?
+- [x] How long does each individual git repo take to build?
 - [ ] Total number of lines - sudden increase in this might indicate tons of new warnings
 - [ ] Where are we downloading all the stuff from?
 - [ ] Are we doing some redundant downloads? Multiple versions of the same thing?

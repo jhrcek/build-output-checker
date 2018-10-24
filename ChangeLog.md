@@ -2,6 +2,11 @@
 
 ## Unreleased changes
 
+## Version 0.1.2
+
+Added checks:
+- added duration per repository
+
 - added generatedOn timestamp to the report
 
 ## Version 0.1.1

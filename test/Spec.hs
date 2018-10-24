@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeApplications  #-}
 module Main where
 
+import Console.Checks.RepoDuration (getBuildDurationPerRepo)
 import Console.Checks.TestDuration (MethodDuration (..))
 import Console.Parse (parseLine)
 import Console.Types
@@ -14,19 +15,19 @@ main = hspec $ do
     describe "parseLine" $ do
       it "should parse lines where maven download starts" $
         parseLine "[INFO] Downloading from mirror-central: http://some.url/1"
-          `shouldBe` MavenTransferLine (MavenTransfer Download (RepoName "mirror-central") (RepoUrl "http://some.url/1") TransferStart)
+          `shouldBe` MavenTransferLine (MavenTransfer Download (M2RepoName "mirror-central") (RepoUrl "http://some.url/1") TransferStart)
       it "should parse lines where maven download ends" $
         parseLine "[INFO] Downloaded from mirror-central: http://some.url/2 (15 B at 30 MB/s)"
-          `shouldBe` MavenTransferLine (MavenTransfer Download (RepoName "mirror-central") (RepoUrl "http://some.url/2") (TransferEnd (FileSize 15 B) (Just (TransferSpeed 30 MB))))
+          `shouldBe` MavenTransferLine (MavenTransfer Download (M2RepoName "mirror-central") (RepoUrl "http://some.url/2") (TransferEnd (FileSize 15 B) (Just (TransferSpeed 30 MB))))
       it "should parse lines where maven upload starts" $
         parseLine "[INFO] Uploading to local: http://some.url/3"
-          `shouldBe` MavenTransferLine (MavenTransfer Upload (RepoName "local") (RepoUrl "http://some.url/3") TransferStart)
+          `shouldBe` MavenTransferLine (MavenTransfer Upload (M2RepoName "local") (RepoUrl "http://some.url/3") TransferStart)
       it "should parse lines where maven upload ends" $
         parseLine "[INFO] Uploaded to local: http://some.url/4 (368 B at 368 kB/s)"
-          `shouldBe` MavenTransferLine (MavenTransfer Upload (RepoName "local") (RepoUrl "http://some.url/4") (TransferEnd (FileSize 368 B) (Just (TransferSpeed 368 KB))))
+          `shouldBe` MavenTransferLine (MavenTransfer Upload (M2RepoName "local") (RepoUrl "http://some.url/4") (TransferEnd (FileSize 368 B) (Just (TransferSpeed 368 KB))))
       it "should parse lines where maven upload ends - without transfer speed info" $
         parseLine "[INFO] Uploaded to local: http://some.url/5 (1.9 kB)"
-          `shouldBe` MavenTransferLine (MavenTransfer Upload (RepoName "local") (RepoUrl "http://some.url/5") (TransferEnd (FileSize 1.9 KB) Nothing))
+          `shouldBe` MavenTransferLine (MavenTransfer Upload (M2RepoName "local") (RepoUrl "http://some.url/5") (TransferEnd (FileSize 1.9 KB) Nothing))
       it "should parse lines where maven plugin execution starts" $
         parseLine "[INFO] --- buildnumber-maven-plugin:1.4:create (get-scm-revision) @ uberfire-project-client ---"
           `shouldBe` PluginExecutionLine (PluginExecution "buildnumber-maven-plugin" "1.4" "create" "get-scm-revision" "uberfire-project-client")
@@ -42,8 +43,30 @@ main = hspec $ do
       it "should parse Maven ERROR log lines" $
         parseLine "[ERROR] Found 1 illegal transitive type dependencies in artifact 'org.uberfire:uberfire-project-backend:jar:2.11.0.20181022-121005':"
           `shouldBe` Maven ERROR "Found 1 illegal transitive type dependencies in artifact 'org.uberfire:uberfire-project-backend:jar:2.11.0.20181022-121005':"
+      it "should parse Maven repo action start lines" $
+        parseLine "Repository: droolsjbpm-knowledge"
+          `shouldBe` RepoActionStart (GitRepoName "droolsjbpm-knowledge")
   describe "Console.Checks.JunitReport" $
       describe "MethodDuration" $
         it "should parse single MethodDuration JSON object" $
           Aeson.decode @MethodDuration "{\"className\":\"org.dashbuilder.navigation.service.LayoutTemplateAnalyzerTest\",\"duration\":0.002,\"name\":\"testPerspectiveReuseNoRecursiveIssue\"}"
             `shouldBe` (Just $ MethodDuration "org.dashbuilder.navigation.service.LayoutTemplateAnalyzerTest" "testPerspectiveReuseNoRecursiveIssue" 0.002)
+  describe "Console.Checks.RepoDuration" $
+      it "should work" $
+          getBuildDurationPerRepo
+              [ TimedLogLine (et 0) Unknown
+              , TimedLogLine (et 1) (RepoActionStart $ GitRepoName "repo1")
+              , TimedLogLine (et 11) (Maven INFO "..")
+              , TimedLogLine (et 12) (Maven INFO "BUILD SUCCESS")
+              , TimedLogLine (et 100) (RepoActionStart $ GitRepoName "repo2")
+              , TimedLogLine (et 200) (Maven INFO "..")
+              , TimedLogLine (et 250) (Maven INFO "BUILD SUCCESS")
+              , TimedLogLine (et 1000) Unknown
+              ]
+          `shouldBe`
+              [ (GitRepoName "repo2", secondsToDuration 100) -- repos sorted by duration descending
+              , (GitRepoName "repo1", secondsToDuration 10)
+              ]
+
+et :: Double -> ElapsedTime
+et = mkElapsedTime

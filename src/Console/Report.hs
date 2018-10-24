@@ -28,6 +28,7 @@ data ReportData = ReportData
     , mavenData       :: !MavenData
     , buildDuration   :: !Duration
     , pluginStats     :: !PluginStats
+    , durationPerRepo :: ![(GitRepoName, Duration)]
     , generatedOn     :: !UTCTime
     }
 
@@ -48,7 +49,19 @@ reportView ReportData{..} =
             slowTestClassesView slowTestClasses
             slowTestMethodsView slowTestMethods
             pluginStatsView pluginStats
+            durationPerRepoView durationPerRepo
             infoFooter generatedOn
+
+durationPerRepoView :: [(GitRepoName, Duration)] -> Html
+durationPerRepoView xs = details $ do
+    summary $ text "Build time per repository"
+    table $ do
+        tr $ th "Repository" >> th "Build time (HH:MM:SS)"
+        traverse_ repoRow xs
+  where
+    repoRow (GitRepoName repNm, duration) = tr $ do
+        td $ text repNm
+        td $ sh duration
 
 pluginStatsView :: PluginStats -> Html
 pluginStatsView PluginStats{pluginDurations, durationPerPlugin, pluginsWithMultipleVersions} = div $ do
