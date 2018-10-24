@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+- added generatedOn timestamp to the report
+
 ## Version 0.1.1
 
 Added checks:
