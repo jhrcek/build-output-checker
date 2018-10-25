@@ -1,7 +1,9 @@
 {-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 module Main where
 
+import Console.Checks.BuildFinished (getBuildFinishedTimeStamp)
 import Console.Checks.MavenDownload (getMavenDownloadData)
 import Console.Checks.MavenPlugin (getPluginStats)
 import Console.Checks.RepoDuration (getBuildDurationPerRepo)
@@ -19,18 +21,13 @@ main = do
     testInfos <- readMethodDurations "junitreport"
     generatedOn <- getCurrentTime
     let log_plain = getLogLine <$> log_ts
+        -- ReportData fields
         slowTestClasses = takeWhile (\classInfo -> tciTimeElapsed classInfo > 60) $ getClassInfos log_plain
         slowTestMethods = takeWhile (\methodInfo -> mdDuration methodInfo > 20) testInfos
         mavenData = getMavenDownloadData log_ts
         buildDuration = getDuration log_ts
         pluginStats = getPluginStats log_ts
         durationPerRepo = getBuildDurationPerRepo log_ts
-        reportData = ReportData
-            slowTestClasses
-            slowTestMethods
-            mavenData
-            buildDuration
-            pluginStats
-            durationPerRepo
-            generatedOn
+        buildFinishedOn = getBuildFinishedTimeStamp log_plain
+        reportData = ReportData{..}
     writeReport reportData "report.html"

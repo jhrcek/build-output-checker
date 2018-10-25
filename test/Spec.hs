@@ -2,6 +2,7 @@
 {-# LANGUAGE TypeApplications  #-}
 module Main where
 
+import Console.Checks.BuildFinished (getBuildFinishedTimeStamp)
 import Console.Checks.RepoDuration (getBuildDurationPerRepo)
 import Console.Checks.TestDuration (MethodDuration (..))
 import Console.Parse (parseLine)
@@ -47,26 +48,37 @@ main = hspec $ do
         parseLine "Repository: droolsjbpm-knowledge"
           `shouldBe` RepoActionStart (GitRepoName "droolsjbpm-knowledge")
   describe "Console.Checks.JunitReport" $
-      describe "MethodDuration" $
-        it "should parse single MethodDuration JSON object" $
-          Aeson.decode @MethodDuration "{\"className\":\"org.dashbuilder.navigation.service.LayoutTemplateAnalyzerTest\",\"duration\":0.002,\"name\":\"testPerspectiveReuseNoRecursiveIssue\"}"
-            `shouldBe` (Just $ MethodDuration "org.dashbuilder.navigation.service.LayoutTemplateAnalyzerTest" "testPerspectiveReuseNoRecursiveIssue" 0.002)
+    describe "MethodDuration" $
+      it "should parse single MethodDuration JSON object" $
+        Aeson.decode @MethodDuration "{\"className\":\"org.dashbuilder.navigation.service.LayoutTemplateAnalyzerTest\",\"duration\":0.002,\"name\":\"testPerspectiveReuseNoRecursiveIssue\"}"
+          `shouldBe` (Just $ MethodDuration "org.dashbuilder.navigation.service.LayoutTemplateAnalyzerTest" "testPerspectiveReuseNoRecursiveIssue" 0.002)
+  describe "Console.Checks.BuildFinished" $
+    describe "getBuildFinishedTimeStamp" $ do
+      it "should extract last timestamp from the list of lines" $
+        getBuildFinishedTimeStamp
+          [ Unknown
+          , Maven INFO "Finished at: 2018-10-24T07:00:10-05:00"
+          , Maven INFO "Finished at: 2018-10-24T07:48:37-04:00"
+          ]
+        `shouldBe` Just "2018-10-24 at 07:48:37"
+      it "should return Nothing when there are no build timestamps" $
+        getBuildFinishedTimeStamp [Unknown] `shouldBe` Nothing
   describe "Console.Checks.RepoDuration" $
-      it "should work" $
-          getBuildDurationPerRepo
-              [ TimedLogLine (et 0) Unknown
-              , TimedLogLine (et 1) (RepoActionStart $ GitRepoName "repo1")
-              , TimedLogLine (et 11) (Maven INFO "..")
-              , TimedLogLine (et 12) (Maven INFO "BUILD SUCCESS")
-              , TimedLogLine (et 100) (RepoActionStart $ GitRepoName "repo2")
-              , TimedLogLine (et 200) (Maven INFO "..")
-              , TimedLogLine (et 250) (Maven INFO "BUILD SUCCESS")
-              , TimedLogLine (et 1000) Unknown
-              ]
-          `shouldBe`
-              [ (GitRepoName "repo2", secondsToDuration 100) -- repos sorted by duration descending
-              , (GitRepoName "repo1", secondsToDuration 10)
-              ]
+    it "should work" $
+      getBuildDurationPerRepo
+        [ TimedLogLine (et 0) Unknown
+        , TimedLogLine (et 1) (RepoActionStart $ GitRepoName "repo1")
+        , TimedLogLine (et 11) (Maven INFO "..")
+        , TimedLogLine (et 12) (Maven INFO "BUILD SUCCESS")
+        , TimedLogLine (et 100) (RepoActionStart $ GitRepoName "repo2")
+        , TimedLogLine (et 200) (Maven INFO "..")
+        , TimedLogLine (et 250) (Maven INFO "BUILD SUCCESS")
+        , TimedLogLine (et 1000) Unknown
+        ]
+      `shouldBe`
+        [ (GitRepoName "repo2", secondsToDuration 100) -- repos sorted by duration descending
+        , (GitRepoName "repo1", secondsToDuration 10)
+        ]
 
 et :: Double -> ElapsedTime
 et = mkElapsedTime

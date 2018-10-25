@@ -2,6 +2,8 @@
 
 ## Unreleased changes
 
+- added build finished timestamp
+
 ## Version 0.1.2
 
 Added checks:
