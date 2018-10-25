@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import Console.Checks.BuildFinished (getBuildFinishedTimeInfo)
 import Console.Checks.MavenDownload (getMavenDownloadData)
 import Console.Checks.MavenPlugin (getPluginStats)
 import Console.Checks.RepoDuration (getBuildDurationPerRepo)
@@ -34,3 +35,4 @@ main = do
             durationPerRepo
             generatedOn
     writeReport reportData "report.html"
+    print $ getBuildFinishedTimeInfo log_plain
