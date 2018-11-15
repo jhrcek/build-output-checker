@@ -13,7 +13,8 @@ import qualified Data.Text as T
 import Data.Text.Read (double)
 import Text.Parsec (parse, string, try, (<|>))
 import Text.Parsec.Char (anyChar, char, digit, satisfy)
-import Text.Parsec.Combinator (eof, many1, manyTill, option, optionMaybe)
+import Text.Parsec.Combinator (eof, many1, manyTill, option, optionMaybe,
+                               optional)
 import Text.Parsec.Text (Parser)
 import Util (warn)
 
@@ -58,7 +59,10 @@ logLineP =
     pluginStartP =
         try (string "[INFO] --- ") *> (PluginExecutionLine <$> pluginExecutionP)
     testClassInfoLineP =
-        try (string "Tests run: " *> (TestClassInfoLine <$> testClassInfoP))
+        try (optional (char '[' *> (string "WARNING] " <|> string "INFO] " <|> string "ERROR] "))  -- Failsafe 2.22 uses INFO and WARN logging
+             *> string "Tests run: " -- Failsafe 2.18 - just prints to STDOUT
+             *> (TestClassInfoLine <$> testClassInfoP))
+
     repoActionStartP =
         try (string "Repository: " *> (RepoActionStart . GitRepoName <$> restOfLineP))
 
@@ -102,7 +106,8 @@ testClassInfoP = TestClassInfo
     <*> (intP <* string ", Errors: ")
     <*> (intP <* string ", Skipped: ")
     <*> (intP <* string ", Time elapsed: ")
-    <*> (doubleP <* string " sec - in ")
+    -- Surefire 2.18 uses "sec" unit, 2.22 uses "s", but when there're failures there's also extra "<<< FAILURE!"
+    <*> (doubleP <* (anyChar `manyTill` try (string " - in ")))
     <*> restOfLineP
 
 -- Parse "maven-clean-plugin:3.0.0:clean (default-clean) @ uberfire-widgets-properties-editor-backend ---"

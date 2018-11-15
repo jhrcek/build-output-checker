@@ -32,9 +32,6 @@ main = hspec $ do
       it "should parse lines where maven plugin execution starts" $
         parseLine "[INFO] --- buildnumber-maven-plugin:1.4:create (get-scm-revision) @ uberfire-project-client ---"
           `shouldBe` PluginExecutionLine (PluginExecution "buildnumber-maven-plugin" "1.4" "create" "get-scm-revision" "uberfire-project-client")
-      it "should parse lines with test class info" $
-        parseLine "Tests run: 1, Failures: 2, Errors: 3, Skipped: 4, Time elapsed: 5.694 sec - in org.jbpm.process.workitem.camel.CamelSqlTest"
-          `shouldBe` TestClassInfoLine (TestClassInfo 1 2 3 4 5.694 "org.jbpm.process.workitem.camel.CamelSqlTest")
       it "should parse Maven INFO log lines" $
         parseLine "[INFO] Adding ignore: org.joda.time.*"
           `shouldBe` Maven INFO "Adding ignore: org.joda.time.*"
@@ -47,6 +44,19 @@ main = hspec $ do
       it "should parse Maven repo action start lines" $
         parseLine "Repository: droolsjbpm-knowledge"
           `shouldBe` RepoActionStart (GitRepoName "droolsjbpm-knowledge")
+      describe "should parse line with test class info" $ do
+          it "surefire 2.18.1 - stdout" $
+            parseLine "Tests run: 1, Failures: 2, Errors: 3, Skipped: 4, Time elapsed: 5.694 sec - in org.jbpm.process.workitem.camel.CamelSqlTest"
+              `shouldBe` TestClassInfoLine (TestClassInfo 1 2 3 4 5.694 "org.jbpm.process.workitem.camel.CamelSqlTest")
+          it "surefire 2.22.1 - WARNING" $
+            parseLine "[WARNING] Tests run: 5, Failures: 4, Errors: 3, Skipped: 2, Time elapsed: 46.928 s - in org.jbpm.process.workitem.camel.karaf.itests.CamelWorkitemIntegrationTest"
+                `shouldBe` TestClassInfoLine (TestClassInfo 5 4 3 2 46.928 "org.jbpm.process.workitem.camel.karaf.itests.CamelWorkitemIntegrationTest")
+          it "surefire 2.22.1 - INFO" $
+            parseLine "[INFO] Tests run: 5, Failures: 4, Errors: 3, Skipped: 2, Time elapsed: 46.928 s - in org.jbpm.process.workitem.camel.karaf.itests.CamelWorkitemIntegrationTest"
+                `shouldBe` TestClassInfoLine (TestClassInfo 5 4 3 2 46.928 "org.jbpm.process.workitem.camel.karaf.itests.CamelWorkitemIntegrationTest")
+          it "surefire 2.22.1 - ERROR" $
+            parseLine "[ERROR] Tests run: 2, Failures: 0, Errors: 2, Skipped: 0, Time elapsed: 180.995 s <<< FAILURE! - in org.kie.karaf.itest.KieDMNKarafIntegrationTest"
+                `shouldBe` TestClassInfoLine (TestClassInfo 2 0 2 0 180.995 "org.kie.karaf.itest.KieDMNKarafIntegrationTest")
   describe "Console.Checks.JunitReport" $
     describe "MethodDuration" $
       it "should parse single MethodDuration JSON object" $
