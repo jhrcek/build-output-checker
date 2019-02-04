@@ -23,6 +23,9 @@ main = hspec $ do
       it "should parse lines where maven upload starts" $
         parseLine "[INFO] Uploading to local: http://some.url/3"
           `shouldBe` MavenTransferLine (MavenTransfer Upload (M2RepoName "local") (RepoUrl "http://some.url/3") TransferStart)
+      it "should handle ':' in the repo name" $
+        parseLine "[INFO] Uploading to local::default: file:///something/javaparser-parent-3.10.2.pom"
+          `shouldBe` MavenTransferLine (MavenTransfer Upload (M2RepoName "local::default") (RepoUrl "file:///something/javaparser-parent-3.10.2.pom") TransferStart)
       it "should parse lines where maven upload ends" $
         parseLine "[INFO] Uploaded to local: http://some.url/4 (368 B at 368 kB/s)"
           `shouldBe` MavenTransferLine (MavenTransfer Upload (M2RepoName "local") (RepoUrl "http://some.url/4") (TransferEnd (FileSize 368 B) (Just (TransferSpeed 368 KB))))

@@ -95,7 +95,7 @@ mavenTransferP =
               <*> optionMaybe (string " at " *> transferSpeedP))))
 
         where
-          repoNameP = M2RepoName . T.pack <$> anyChar `manyTill` string ": "
+          repoNameP = M2RepoName . T.init . T.pack  <$> anyChar `manyTill` char ' '
           repoUrlP :: Parser a -> Parser RepoUrl
           repoUrlP endP = RepoUrl . T.pack <$> anyChar `manyTill` endP
 
