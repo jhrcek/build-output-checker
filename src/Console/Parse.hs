@@ -83,21 +83,27 @@ mavenTransferP =
     (try (string "[INFO] Downloaded from ") *>
          (MavenTransfer Download <$> repoNameP
             <*> repoUrlP (string " (")
-            <*> (TransferEnd <$> fileSizeP <*> (Just <$> (string " at " *> transferSpeedP)))))  <|>
+            <*> transferEndP))  <|>
     (try (string "[INFO] Uploading to ") *>
          (MavenTransfer Upload <$> repoNameP
             <*> repoUrlP eof <*> pure TransferStart)) <|>
     (try (string "[INFO] Uploaded to ") *>
          (MavenTransfer Upload <$> repoNameP
             <*> repoUrlP (string " (")
-            <*> (TransferEnd <$> fileSizeP
-              -- local uploads only have file size, e.g. "[INFO] Uploaded to local: file://... (1.3 kB)"
-              <*> optionMaybe (string " at " *> transferSpeedP))))
+            <*> transferEndP))
 
         where
+          repoNameP :: Parser M2RepoName
           repoNameP = M2RepoName . T.init . T.pack  <$> anyChar `manyTill` char ' '
+
           repoUrlP :: Parser a -> Parser RepoUrl
           repoUrlP endP = RepoUrl . T.pack <$> anyChar `manyTill` endP
+
+          transferEndP :: Parser TransferStartOrEnd
+          transferEndP = TransferEnd
+              <$> fileSizeP
+              -- local uploads only have file size, e.g. "[INFO] Uploaded to local: file://... (1.3 kB)"
+              <*> optionMaybe (string " at " *> transferSpeedP)
 
 -- "Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.694 sec - in org.jbpm.process.workitem.camel.CamelSqlTest"
 testClassInfoP :: Parser TestClassInfo

@@ -20,6 +20,9 @@ main = hspec $ do
       it "should parse lines where maven download ends" $
         parseLine "[INFO] Downloaded from mirror-central: http://some.url/2 (15 B at 30 MB/s)"
           `shouldBe` MavenTransferLine (MavenTransfer Download (M2RepoName "mirror-central") (RepoUrl "http://some.url/2") (TransferEnd (FileSize 15 B) (Just (TransferSpeed 30 MB))))
+      it "should parse local downloads" $
+        parseLine "[INFO] Downloaded from local: file:///local/filesystem/maven-metadata.xml (268 B)"
+          `shouldBe` MavenTransferLine (MavenTransfer Download (M2RepoName "local") (RepoUrl "file:///local/filesystem/maven-metadata.xml") (TransferEnd (FileSize 268 B) Nothing))
       it "should parse lines where maven upload starts" $
         parseLine "[INFO] Uploading to local: http://some.url/3"
           `shouldBe` MavenTransferLine (MavenTransfer Upload (M2RepoName "local") (RepoUrl "http://some.url/3") TransferStart)
